@@ -1,0 +1,45 @@
+name: CI Pipeline - Streamlit Databricks App
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Setup Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Lint code
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      # Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t gold-dashboard:${{ github.sha }} .
+
+      # Optional: Run container smoke test
+      - name: Run container test
+        run: |
+          docker run -d -p 8501:8501 gold-dashboard:${{ github.sha }}
+          sleep 10
+          docker ps
